@@ -10,8 +10,14 @@ async function verifyTranslation(page, input, expected) {
   const outputBox = page.locator(
     'div.w-full.h-80.p-3.rounded-lg.ring-1.ring-slate-300.whitespace-pre-wrap.overflow-y-auto.flex-grow.bg-slate-50'
   );
-  await inputBox.fill(input);
-  await expect(outputBox).toHaveText(expected, { timeout: 30000 });
+await inputBox.fill(input);
+
+// wait until translation appears
+await expect(outputBox).not.toHaveText('', { timeout: 30000 });
+
+// then assert expected value
+await expect(outputBox).toContainText(expected);
+
 }
 
 

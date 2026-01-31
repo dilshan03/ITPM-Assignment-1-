@@ -1,123 +1,80 @@
-# Swift Translator — Playwright Tests ✅
+# ITPM_assignment1 - SwiftTranslator Playwright Automation Tests
 
-A small Playwright test suite for verifying the Romanized Sinhala → Sinhala transliteration on https://www.swifttranslator.com/.
+This repository contains automated end-to-end tests for the SwiftTranslator application using Playwright. The tests cover various functional scenarios, including positive and negative test cases for translation features.
 
----
+## Features
 
-## 🚀 Quick Start
+- Automated UI testing for translation functionality
+- Cross-browser testing (Chromium, Firefox, WebKit)
+- Data-driven tests using Excel input
+- Comprehensive test reporting with Playwright's built-in reporter
+- Negative functional tests to ensure error handling
 
-Prerequisites:
+## Requirements
 
-- Node.js (v16+ recommended)
-- npm (or yarn)
-- Playwright browsers (installed automatically when running commands below)
+- Node.js (v18 or higher)
+- npm (comes with Node.js)
+- Git
 
-Install dependencies:
+## Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/dilshan03/ITPM-Assignment-1-
+   cd ITPM-Assignment-1-
+
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Install Playwright browsers:**
+   ```bash
+   npx playwright install
+   ```
+
+## Running Tests
+
+### Run all tests
 
 ```bash
-npm install
-```
-
-Run the full test suite:
-
-```bash
-# Run all tests across configured browsers
 npx playwright test
 ```
 
-Run a single test file:
+### Run specific test file
 
 ```bash
-npx playwright test tests/Translator.spec.js
+npx playwright test tests/translator.spec.js
 ```
 
-Open the HTML report:
+### Run tests in a specific browser
 
 ```bash
-# Show the Playwright HTML report (defaults to playwright-report/)
-npx playwright show-report
-# Or open the file directly: playwright-report/index.html
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project=webkit
 ```
 
-Run a single test by name (grep):
-
-```bash
-npx playwright test -g "Pos_Fun_0001"
-```
-
-Run tests headed (visible) or choose a browser:
+### Run tests in headed mode (visible browser)
 
 ```bash
 npx playwright test --headed
-npx playwright test --project=firefox
 ```
 
----
+### Run tests with debugging
 
-## 🔧 Project Structure
-
-- `tests/Translator.spec.js` — Playwright tests and test cases (positive + negative arrays)
-- `playwright.config.js` — Playwright configuration (testDir, reporter, projects)
-- `playwright-report/` — Generated HTML report
-- `test-results/` — Per-run logs / artifacts (screenshots / traces)
-
----
-
-## ✍️ Test data and how to add tests
-
-Test cases are defined as objects in `positiveTestCases` and `negativeTestCases` arrays near the top of `tests/Translator.spec.js`.
-
-To add a new case:
-
-1. Add an object to the appropriate array with `id`, `input`, `expected`, and `group`.
-2. Add a new `test()` entry or let the test loop pick it up automatically.
-
-Example entry:
-
-```js
-{ id: 'Pos_Fun_999', input: 'oya kohomada', expected: 'ඔයා කොහොමද', group: 'greeting' }
+```bash
+npx playwright test --debug
 ```
 
----
+## Viewing Reports
 
-## 🧾 Type checking & lint notes
+After running tests, view the HTML report:
 
-This repo uses `// @ts-check` at the top of the test file. If you see errors like `Parameter 'str' implicitly has an 'any' type (ts7006)`:
-
-- Add JSDoc annotations to provide types for functions (e.g. `@param {string|undefined} str` and `@returns {string}`), or
-- Convert files to TypeScript (`.ts`) and add proper type annotations.
-
-Example JSDoc:
-
-```js
-/**
- * Normalize input text for reliable comparison.
- * @param {string|undefined} str
- * @returns {string}
- */
-function normalize(str) { ... }
+```bash
+npx playwright show-report
 ```
-
----
-
-## 🧪 Debugging / Troubleshooting
-
-- Increase timeouts or add extra waits if the site is slow (see `page.waitForTimeout()` in tests).
-- Use `npx playwright test --debug` to run in debug mode with inspector.
-- Check `test-results/` and `playwright-report/` for artifacts (screenshots/traces).
-
----
-
-## ♻️ Contributing
-
-Feel free to open issues or PRs to add tests, improve data coverage (edge cases, punctuation, numerals), or harden selectors and assertions.
-
----
-
-## 📄 License
-
-This repository currently has no license specified. Add a `LICENSE` file if you plan to share or publish the code.
-
----
-
-If you'd like, I can also add npm scripts to `package.json` (like `test` and `report`) and a CONTRIBUTING.md file. 🔧

@@ -1,144 +1,275 @@
-// @ts-check
 import { test, expect } from '@playwright/test';
 
-// -----------------------------------------------------------------------------
-// Helper function to normalize text for reliable comparison
-// -----------------------------------------------------------------------------
-function normalize(str) {
-  if (!str) return '';
-  return str
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[\u200C\u200D]/g, '')     // remove zero-width joiner/non-joiner
-    .normalize('NFC');                   // normalize Unicode (important for Sinhala)
-}
-
-// -----------------------------------------------------------------------------
-// Test configuration
-// -----------------------------------------------------------------------------
-const APP_URL = 'https://www.swifttranslator.com/';
-
-// -----------------------------------------------------------------------------
-// Test data — Positive tests (should PASS)
-// -----------------------------------------------------------------------------
-const positiveTestCases = [
-  { id: 'Pos_Fun_0001', input: 'mama veadata yanawaa', expected: 'මම වැඩට යනවා', group: 'simple' },
-  { id: 'Pos_Fun_0002', input: 'hamudhuruvo dhaanee valadhanavaa', expected: 'හාමුදුරුවො දානේ වලදනවා', group: 'respectable' },
-  { id: 'Pos_Fun_003',  input: 'yuShmathaa nivaeradhidha? vahaama pavasanna.', expected: 'යුෂ්මතා නිවැරදිද? වහාම පවසන්න.', group: 'interrogative imperative' },
-  { id: 'Pos_Fun_004',  input: 'suba rathriyak', expected: 'සුබ රත්‍රියක්', group: 'greeting' },
-  { id: 'Pos_Fun_005',  input: 'kohedha ban yanne?', expected: 'කොහෙද බන් යන්නෙ?', group: 'informal' },
-  { id: 'Pos_Fun_006',  input: 'mata nidhimathayi', expected: 'මට නිදිමතයි', group: 'daily' },
-  { id: 'Pos_Fun_007',  input: 'hari hari gihin enna', expected: 'හරි හරි ගිහින් එන්න', group: 'repeated' },
-  { id: 'Pos_Fun_008',  input: 'mata oka karanna bea mn enne nae', expected: 'මට ඔක කරන්න බැ ම්න් එන්නෙ නැ', group: 'negation' },
-  { id: 'Pos_Fun_009',  input: 'api ehe yamu. mama nam iyeth ehe giyaa', expected: 'අපි එහෙ යමු. මම නම් ඉයෙත් එහෙ ගියා', group: 'past plural' },
-  { id: 'Pos_Fun_010',  input: 'zoom meeting ekak gamu', expected: 'zoom meeting එකක් ගමු', group: 'tech english' },
-  { id: 'Pos_Fun_11',   input: 'Thank you. oyaa dhiipu thaegga sahenna vatinava mata', expected: 'Thank you. ඔයා දීපු තැග්ග සහෙන්න වටිනව මට', group: 'mixed' },
-  { id: 'Pos_Fun_12',   input: 'machan mata adha Teams meeting ekee link eka dhaanna oone. Zoom eka use karanna puluvan nam eka dhenna. Email ekak yanna baari nam WhatsApp karala dhaapan. Mama 2.30ta pahala inna oone', expected: 'මචන් මට අද Teams meeting එකේ link එක දාන්න ඕනෙ. Zoom එක use කරන්න පුලුවන් නම් එක දෙන්න. Email එකක් යන්න බාරි නම් WhatsApp කරල දාපන්. මම 2.30ට පහල ඉන්න ඕනෙ.', group: 'long paragraph' },
-  { id: 'Pos_Fun_13',   input: 'heta udhee 7.00 vedhdhi RS. 1000 genalla dhenna', expected: 'හෙට උදේ 7.00 වෙද්දි RS. 1000 ගෙනල්ල දෙන්න', group: 'numbers date' },
-  { id: 'Pos_Fun_14',   input: 'gihin nidhaaganin, maath nidhagannavaa', expected: 'ගිහින් නිදාගනින්, මාත් නිදගන්නවා', group: 'imperative' },
-  { id: 'Pos_Fun_15',   input: 'oyaata mokakdha magen kerenna oonee? oonee dhee kiyanna kallaa dhennam', expected: 'ඔයාට මොකක්ද මගෙන් කෙරෙන්න ඕනේ? ඕනේ දේ කියන්න කල්ලා දෙන්නම්', group: 'question' },
-  { id: 'Pos_Fun_16',   input: 'Epaa!!! ohoma karadhdhi anith aya kohomadha innee', expected: 'එපා!!! ඔහොම කරද්දි අනිත් අය කොහොමද ඉන්නේ', group: 'punctuation' },
-  { id: 'Pos_Fun_17',   input: 'call ekak ganna oonee. phone eka dhenna puluvan dha', expected: 'call එකක් ගන්න ඕනේ. phone එක දෙන්න පුලුවන් ද', group: 'mixed' },
-  { id: 'Pos_Fun_19',   input: 'janavaari 24 venidhata api hambemu', expected: 'ජනවාරි 24 වෙනිදට අපි හම්බෙමු', group: 'date' },
-  { id: 'Pos_Fun_20',   input: 'adha hari heta hari maharagama yanna enavaa dha', expected: 'අද හරි හෙට හරි maharagama යන්න එනවා ද', group: 'place' },
-  { id: 'Pos_Fun_21',   input: 'kaema             kanne naedhdha dhaenma', expected: 'කැම කන්නෙ නැද්ද දැන්ම', group: 'spaces' },
-  { id: 'Pos_Fun_22',   input: 'hari bro, ela', expected: 'හරි bro, එල', group: 'slang' },
-  { id: 'Pos_Fun_23',   input: 'Api train ekee kandy yamudha?', expected: 'අපි train එකේ kandy යමුද?', group: 'mixed' },
-  { id: 'Pos_Fun_24',   input: 'mata intern ekak hambune nam nae thaama. thaenak dhannava nam kiyanna puluvan dha. magee CV eka whatsapp karannam. puluvan nam loku udhavuvak', expected: 'මට intern එකක් හම්බුනෙ නම් නැ තාම. තැනක් දන්නව නම් කියන්න පුලුවන් ද. මගේ CV එක whatsapp කරන්නම්. පුලුවන් නම් ලොකු උදවුවක්', group: 'paragraph' },
-];
-
-// -----------------------------------------------------------------------------
-// Test data — Negative tests (should FAIL - output should NOT match expected)
-// -----------------------------------------------------------------------------
-const negativeTestCases = [
-  { id: 'Neg_Fun_01',   input: 'All the best', expected: 'All the best', group: 'pure english' },
-  { id: 'Neg_Fun_02',   input: 'sim eka ganna nic eka onee', expected: 'සිම් එක ගන්න nic එක ඔනේ', group: 'abbreviation' },
-  { id: 'Neg_Fun_03',   input: 'sinhala translate karanna bae', expected: 'සිංහල translate කරන්න බැ', group: 'meta' },
-  { id: 'Neg_Fun_04',   input: 'laptop eke gpu eka madhi vaeda karanna', expected: 'laptop eke gpu එක මදි වැඩ කරන්න', group: 'abbreviation' },
-  { id: 'Neg_Fun_06',   input: 'My apologies. I am very sorry for my mistake.', expected: 'My apologies. I am very sorry for my mistake.', group: 'pure english' },
-  { id: 'Neg_Fun_07',   input: 'kolao navam maha perahera. heta saha anidhdha dhina vala pavathve', expected: 'කොලඔ නවම් මහ පෙරහර. හෙට සහ අනිද්ද දින වල පවත්වෙ', group: 'proper noun' },
-];
-
-// -----------------------------------------------------------------------------
-// Test suite - Positive Tests (should PASS)
-// -----------------------------------------------------------------------------
-test.describe('Romanized Sinhala → Sinhala Transliteration - Positive Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(APP_URL, { waitUntil: 'networkidle' });
-    // Wait for the input textbox to be visible
-    await page.getByRole('textbox', { name: 'Input Your Singlish Text Here.' }).waitFor({ state: 'visible' });
-  });
-
-  positiveTestCases.forEach((tc) => {
-    test(`${tc.id} – ${tc.group}`, async ({ page }) => {
-      const inputArea = page.getByRole('textbox', { name: 'Input Your Singlish Text Here.' });
-
-      // Clear + type
-      await inputArea.clear();
-      await inputArea.fill(tc.input);
-
-      // Wait for translation to appear (the site auto-translates as you type)
-      await page.waitForTimeout(2000);
-
-      // Wait for the expected output to appear on the page
-      await page.waitForFunction(
-        (expectedText) => {
-          const bodyText = document.body.innerText || document.body.textContent || '';
-          return bodyText.includes(expectedText);
-        },
-        normalize(tc.expected),
-        { timeout: 950000 }
-      );
-
-      // Get page content and verify
-      const pageContent = await page.textContent('body');
-      const normalizedActual = normalize(pageContent || '');
-      const normalizedExpected = normalize(tc.expected);
-
-      expect(normalizedActual, `Test case ${tc.id} failed: Expected "${tc.expected}" but page content doesn't contain it`).toContain(normalizedExpected);
-    });
-  });
+/* -------------------- Setup -------------------- */
+test.beforeEach(async ({ page }) => {
+  await page.goto('https://www.swifttranslator.com/');
 });
 
-// -----------------------------------------------------------------------------
-// Test suite - Negative Tests (should FAIL - assert output does NOT match)
-// -----------------------------------------------------------------------------
-test.describe('/Singlish ↔ English Translator', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(APP_URL, { waitUntil: 'networkidle' });
-    // Wait for the input textbox to be visible
-    await page.getByRole('textbox', { name: 'Input Your Singlish Text Here.' }).waitFor({ state: 'visible' });
-  });
+async function verifyTranslation(page, input, expected) {
+  const inputBox = page.locator('textarea[placeholder="Input Your Singlish Text Here."]');
+  const outputBox = page.locator(
+    'div.w-full.h-80.p-3.rounded-lg.ring-1.ring-slate-300.whitespace-pre-wrap.overflow-y-auto.flex-grow.bg-slate-50'
+  );
+  await inputBox.fill(input);
+  await expect(outputBox).toHaveText(expected, { timeout: 30000 });
+}
 
-  negativeTestCases.forEach((tc) => {
-    test(`${tc.id} – ${tc.group}`, async ({ page }) => {
-      const inputArea = page.getByRole('textbox', { name: 'Input Your Singlish Text Here.' });
 
-      // Clear + type
-      await inputArea.clear();
-      await inputArea.fill(tc.input);
+/* --- Positive Functional - New --- */
 
-      // Wait for translation to appear
-      await page.waitForTimeout(2000);
+test('Pos_Fun_0001 - Simple daily sentence', async ({ page }) => {
+  await verifyTranslation(page,
+    'mama vaedata yanavaa',
+    'මම වැඩට යනවා'
+  );
+});
 
-      // Wait for the expected output to appear on the page
-      await page.waitForFunction(
-        (expectedText) => {
-          const bodyText = document.body.innerText || document.body.textContent || '';
-          return bodyText.includes(expectedText);
-        },
-        normalize(tc.expected),
-        { timeout: 950000 }
-      );
+test('Pos_Fun_0002 - Complex sentence', async ({ page }) => {
+  await verifyTranslation(page,
+    'haamudhuruvo dhaanee valadhanavaa',
+    'හාමුදුරුවො දානේ වලදනවා'
+  );
+});
 
-      // Get page content and verify
-      const pageContent = await page.textContent('body');
-      const normalizedActual = normalize(pageContent || '');
-      const normalizedExpected = normalize(tc.expected);
+test('Pos_Fun_0003 - Interrogative + Imperative', async ({ page }) => {
+  await verifyTranslation(page,
+    'yuShmathaa nivaeradhidha? vahaama pavasanna.',
+    'යුෂ්මතා නිවැරදිද? වහාම පවසන්න.'
+  );
+});
 
-      // For negative tests: Verify the output matches expected (which may be unchanged or partially translated)
-      // This ensures the system correctly handles edge cases (doesn't over-translate)
-      expect(normalizedActual, `Negative test ${tc.id} failed: Expected "${tc.expected}" but got different output`).toContain(normalizedExpected);
-    });
-  });
+test('Pos_Fun_0004 - Greeting', async ({ page }) => {
+  await verifyTranslation(page,
+    'suba rathriyak',
+    'සුබ රත්‍රියක්'
+  );
+});
+
+test('Pos_Fun_0005 - Informal phrase', async ({ page }) => {
+  await verifyTranslation(page,
+    'kohedha ban yanne?',
+    'කොහෙද බන් යන්නෙ?'
+  );
+});
+
+test('Pos_Fun_0006 - Day to day expression', async ({ page }) => {
+  await verifyTranslation(page,
+    'mata nidhimathayi',
+    'මට නිදිමතයි'
+  );
+});
+
+test('Pos_Fun_0007 - Repeated word expression', async ({ page }) => {
+  await verifyTranslation(page,
+    'hari hari gihin enna',
+    'හරි හරි ගිහින් එන්න'
+  );
+});
+
+test('Pos_Fun_0008 - Negation pattern', async ({ page }) => {
+  await verifyTranslation(page,
+    'mata ooka karanna baee api enne naee',
+    'මට ඕක කරන්න බෑ අපි එන්නෙ නෑ'
+  );
+});
+
+test('Pos_Fun_0009 - Plural + past tense', async ({ page }) => {
+  await verifyTranslation(page,
+    'api ehe yamu. mama nam iiyeth ehe giyaa',
+    'අපි එහෙ යමු. මම නම් ඊයෙත් එහෙ ගියා'
+  );
+});
+
+test('Pos_Fun_0010 - English technical term', async ({ page }) => {
+  await verifyTranslation(page,
+    'zoom meeting ekak gamu',
+    'zoom meeting එකක් ගමු'
+  );
+});
+
+test('Pos_Fun_0011 - Common English words', async ({ page }) => {
+  await verifyTranslation(page,
+    'Thank you. oyaa dhiipu thaegga sahenna vatinava mata',
+    'Thank you. ඔයා දීපු තැග්ග සහෙන්න වටිනව මට'
+  );
+});
+
+test('Pos_Fun_0012 - Long office/apps paragraph M', async ({ page }) => {
+  await verifyTranslation(page,
+    'machan mata adha Teams meeting ekee link eka dhaanna oone. Zoom eka use karanna puluvan nam eka dhenna. Email ekak yanna baari nam WhatsApp karala dhaapan. Mama 2.30ta pahala inna oone',
+    'මචන් මට අද Teams meeting එකේ link එක දාන්න ඕනෙ. Zoom එක use කරන්න පුලුවන් නම් එක දෙන්න. Email එකක් යන්න බාරි නම් WhatsApp කරල දාපන්. මම 2.30ට පහල ඉන්න ඕනෙ'
+  );
+});
+
+test('Pos_Fun_0013 - Currency + date', async ({ page }) => {
+  await verifyTranslation(page,
+    'heta udhee 7.00 vedhdhi RS. 1000 genalla dhenna',
+    'හෙට උදේ 7.00 වෙද්දි RS. 1000 ගෙනල්ල දෙන්න'
+  );
+});
+
+test('Pos_Fun_0014 - Informal frequent expression', async ({ page }) => {
+  await verifyTranslation(page,
+    'gihin nidhaaganin, maath nidhagannavaa',
+    'ගිහින් නිදාගනින්, මාත් නිදගන්නවා'
+  );
+});
+
+test('Pos_Fun_0015 - Simple sentence request', async ({ page }) => {
+  await verifyTranslation(page,
+    'oyaata mokakdha magen kerenna oonee? oonee dhee kiyanna kallaa dhennam',
+    'ඔයාට මොකක්ද මගෙන් කෙරෙන්න ඕනේ? ඕනේ දේ කියන්න කල්ලා දෙන්නම්'
+  );
+});
+
+test('Pos_Fun_0016 - Punctuation heavy', async ({ page }) => {
+  await verifyTranslation(page,
+    'Epaa!!! ohoma karadhdhi anith aya kohomadha innee',
+    'එපා!!! ඔහොම කරද්දි අනිත් අය කොහොමද ඉන්නේ'
+  );
+});
+
+test('Pos_Fun_0017 - Mixed English words', async ({ page }) => {
+  await verifyTranslation(page,
+    'call ekak ganna oonee. phone eka dhenna puluvan dha',
+    'call එකක් ගන්න ඕනේ. phone එක දෙන්න පුලුවන් ද'
+  );
+});
+
+test('Pos_Fun_0019 - Sentence with date', async ({ page }) => {
+  await verifyTranslation(page,
+    'janavaari 24 venidhata api hambemu',
+    'ජනවාරි 24 වෙනිදට අපි හම්බෙමු'
+  );
+});
+
+test('Pos_Fun_0020 - Sentence with place', async ({ page }) => {
+  await verifyTranslation(page,
+    'adha hari heta hari maharagama yanna enavaa dha',
+    'අද හරි හෙට හරි maharagama යන්න එනවා ද'
+  );
+});
+
+test('Pos_Fun_0021 - Multiple spaces', async ({ page }) => {
+  await verifyTranslation(page,
+    'kaema             kanne naedhdha dhaenma',
+    'කැම             කන්නෙ නැද්ද දැන්ම'
+  );
+});
+
+test('Pos_Fun_0022 - Slang', async ({ page }) => {
+  await verifyTranslation(page,
+    'hari bro, ela',
+    'හරි bro, එල'
+  );
+});
+
+test('Pos_Fun_0023 - Common English in question', async ({ page }) => {
+  await verifyTranslation(page,
+    'Api train ekee kandy yamudha?',
+    'අපි train එකේ kandy යමුද?'
+  );
+});
+
+test('Pos_Fun_0024 - Paragraph style mixed', async ({ page }) => {
+  await verifyTranslation(page,
+    'mata intern ekak hambune nam nae thaama. thaenak dhannava nam kiyanna puluvan dha. magee CV eka whatsapp karannam. puluvan nam loku udhavuvak',
+    'මට intern එකක් හම්බුනෙ නම් නැ තාම. තැනක් දන්නව නම් කියන්න පුලුවන් ද. මගේ CV එක whatsapp කරන්නම්. පුලුවන් නම් ලොකු උදවුවක්'
+  );
+});
+
+/* --- Negative Cases - New --- */
+
+test('Neg_Fun_0001 - Pure English greeting', async ({ page }) => {
+  await verifyTranslation(page,
+    'All the best',
+    'All the best'
+  );
+});
+
+test('Neg_Fun_0002 - English abbreviation', async ({ page }) => {
+  await verifyTranslation(page,
+    'sim eka ganna nic eka onee',
+    'සිම් එක ගන්න nic එක ඔනේ'
+  );
+});
+
+test('Neg_Fun_0003 - Unsupported phrase', async ({ page }) => {
+  await verifyTranslation(page,
+    'sinhala translate karanna bae',
+    'සිංහල translate කරන්න බැ'
+  );
+});
+
+test('Neg_Fun_0004 - Mixed abbreviation', async ({ page }) => {
+  await verifyTranslation(page,
+    'laptop eke gpu eka madhi vaeda karanna',
+    'laptop eke gpu එක මදි වැඩ කරන්න'
+  );
+});
+
+test('Neg_Fun_0005 - Long mixed paragraph', async ({ page }) => {
+  await verifyTranslation(page,
+    'oyaa campus ekata avilla mata call ekak dhenna. man avilla inne dhenatamath. Lectures yanna onee. Oyata lectures thiyenavadha? kaema geenna epaa. man genavaa',
+    'ඔයා campus එකට අවිල්ල මට call එකක් දෙන්න. මන් අවිල්ල ඉන්නේ දෙනටමත්. Lectures යන්න ඔනේ. ඔයට lectures තියෙනවද? කැම ගේන්න එපා. මන් ගෙනවා'
+  );
+});
+
+test('Neg_Fun_0006 - Pure English apology', async ({ page }) => {
+  await verifyTranslation(page,
+    'My apologies. I am very sorry for my mistake.',
+    'My apologies. I am very sorry for my mistake.'
+  );
+});
+
+test('Neg_Fun_0007 - Place + event name', async ({ page }) => {
+  await verifyTranslation(page,
+    'kolao navam maha perahera. heta saha anidhdha dhina vala pavathve',
+    'කොලඔ නවම් මහ පෙරහර. හෙට සහ අනිද්ද දින වල පවත්වෙ'
+  );
+});
+
+test('Neg_Fun_0008 - Phrases with missing spaces', async ({ page }) => {
+  await verifyTranslation(page,
+    'mama adha gedharayanvaa',
+    'මම අද ගෙදර යනවා'
+  );
+});
+
+test('Neg_Fun_0009 - English short form', async ({ page }) => {
+  await verifyTranslation(page,
+    'mee cgpa eka nedha balanne ',
+    'මේ cgpa එක නේද බලන්නෙ'
+  );
+});
+
+test('Neg_Fun_0010 - English phrase with date', async ({ page }) => {
+  await verifyTranslation(page,
+    'His birthday is on 2003.12.13',
+    'His birthday is on 2003.12.13'
+  );
+});
+
+/* ---------------- UI ---------------- */
+test('Pos_UI_0001 - Clear button should clear input and output fields', async ({ page }) => {
+  const inputBox = page.locator('textarea[placeholder="Input Your Singlish Text Here."]');
+  const outputBox = page.locator(
+    'div.w-full.h-80.p-3.rounded-lg.ring-1.ring-slate-300.whitespace-pre-wrap.overflow-y-auto.flex-grow.bg-slate-50'
+  );
+  const clearButton = page.locator('button:has-text("Clear")');
+
+  // Step 1: Enter text
+  await inputBox.fill('mama gedhara yanavaa');
+
+  // Step 2: Wait for translation to appear
+  await expect(outputBox).not.toHaveText('', { timeout: 30000 });
+
+  // Step 3: Click Clear button
+  await clearButton.click();
+
+  // Step 4: Validate input box is cleared
+  await expect(inputBox).toHaveValue('');
+
+  // Step 5: Validate output box is cleared
+  await expect(outputBox).toHaveText('');
 });

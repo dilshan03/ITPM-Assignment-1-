@@ -136,6 +136,13 @@ test('Pos_Fun_0017 - Mixed English words', async ({ page }) => {
   );
 });
 
+test('Pos_Fun_0018 - Sentence with time', async ({ page }) => {
+  await verifyTranslation(page,
+    'adhagedharakaemahadhanne nae',
+    'අදගෙදරකැමහදන්නෙ නැ'
+  );
+});
+
 test('Pos_Fun_0019 - Sentence with date', async ({ page }) => {
   await verifyTranslation(page,
     'janavaari 24 venidhata api hambemu',
